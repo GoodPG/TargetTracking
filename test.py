@@ -49,7 +49,7 @@ def startView():
         while True:
             if lock % 2 == 0:
                 picture1=tkImage(vc1)  #原视频从视频中抓取帧并转换为图片，我用的ImageTk.PhotoImage 对象
-                picture2=picture1          #处理后结果，把处理后的帧传到这里即可,我现在是使用的原视频
+                picture2=picture1      #处理后结果，把处理后的帧传到这里即可,我现在是使用的原视频
                 canvas1.create_image(0,0,anchor='nw',image=picture1)  #原视频
                 canvas2.create_image(0,0,anchor='nw',image=picture2)   #处理后视频
                 win.update_idletasks()  #最重要的更新是靠这两句来实现
@@ -59,6 +59,7 @@ def startView():
                 win.update()
     except:
         pass
+    cv2.destroyAllWindows()
 
 #图像转换，用于在画布中显示
 def tkImage(vc):
