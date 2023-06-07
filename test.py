@@ -43,7 +43,8 @@ def targetDetection(frame):
     for contour in contours:
         x, y, w, h = cv2.boundingRect(contour)
         cv2.rectangle(frame, (x, y), (x + w, y + h), (0, 255, 0), 2)
-    return tkImage(fg_mask)
+    outImgList = [tkImage(frame),tkImage(fg_mask)]
+    return outImgList
 
 #目标跟踪
 def targetTrack(frame_lwpCV):
@@ -162,12 +163,16 @@ def startView():
         while True:
             if lock % 2 == 0:
                 frame1 = tkFrame(vc=vc1)
-                picture1=tkImage(frame=frame1)  #原视频从视频中抓取帧并转换为图片，我用的ImageTk.PhotoImage 对象
+                #原视频从视频中抓取帧并转换为图片，我用的ImageTk.PhotoImage 对象
+                if bg == 1:
+                    picture1=targetDetection(frame=frame1)[0]
+                else:
+                    picture1=tkImage(frame=frame1)  
                 #处理后结果，把处理后的帧传到这里即可,我现在是使用的原视频
                 if g == 1:
                     picture2=GMM(frame=frame1)
                 elif bg == 1:
-                    picture2=targetDetection(frame=frame1)
+                    picture2=targetDetection(frame=frame1)[1]
                 elif md == 1:
                     picture2=None
                 else:
