@@ -3,6 +3,7 @@ from tkinter import *
 import cv2
 from PIL import Image, ImageTk
 import tkinter.filedialog
+import numpy as np
 #设置窗口
 window_width=2048
 window_height=640
@@ -17,9 +18,32 @@ es = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (9, 4))
 background = None
 backSub = cv2.createBackgroundSubtractorMOG2()
 g=0
+bg=0
+md=0
+# 设置背景减法器，这里使用opencv提供的MOG2算法
+bg_subtractor = cv2.createBackgroundSubtractorMOG2()
+
+# 构建结构元素，用于形态学运算
+kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (5,5))
 
 #原视频地址
 path_ = ""
+
+# target detection
+def targetDetection(frame):
+    global bg_subtractor
+    global kernel
+    # 背景减法
+    fg_mask = bg_subtractor.apply(frame)
+    # 形态学开运算
+    fg_mask = cv2.morphologyEx(fg_mask, cv2.MORPH_OPEN, kernel)
+    # 找到所有轮廓
+    contours, _ = cv2.findContours(fg_mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+    # 遍历所有轮廓，框出目标物体
+    for contour in contours:
+        x, y, w, h = cv2.boundingRect(contour)
+        cv2.rectangle(frame, (x, y), (x + w, y + h), (0, 255, 0), 2)
+    return tkImage(fg_mask)
 
 #目标跟踪
 def targetTrack(frame_lwpCV):
@@ -100,6 +124,37 @@ def isGmm():
         bg_butt.place(x=window_width/2+120,y=10)
 
 
+#目标检测按钮
+def isDetect():
+    global bg
+    global target_butt
+    if bg == 0:
+        bg = 1
+        target_butt.destroy()
+        target_butt = Button(win,text='关闭目标检测',bd=1,command=isDetect)
+        target_butt.place(x=window_width/2+250,y=10)
+    else:
+        bg = 0
+        target_butt.destroy()
+        target_butt = Button(win,text='打开目标检测',bd=1,command=isDetect)
+        target_butt.place(x=window_width/2+250,y=10)
+
+
+#遮挡纠错
+def isModify():
+    global md
+    global modify_butt
+    if md == 0:
+        md = 1
+        modify_butt.destroy()
+        modify_butt = Button(win,text='关闭遮挡纠错',bd=1,command=isModify)
+        modify_butt.place(x=window_width/2+400,y=10)
+    else:
+        md = 0
+        modify_butt.destroy()
+        modify_butt = Button(win,text='打开遮挡纠错',bd=1,command=isModify)
+        modify_butt.place(x=window_width/2+400,y=10)
+
 #start,请看这里，请看这里,请看这里，请看这里,请看这里，请看这里,请看这里，请看这里,请看这里，请看这里
 def startView():
     vc1 = cv2.VideoCapture(path_)  #打开 path_ 路径的视频
@@ -111,6 +166,10 @@ def startView():
                 #处理后结果，把处理后的帧传到这里即可,我现在是使用的原视频
                 if g == 1:
                     picture2=GMM(frame=frame1)
+                elif bg == 1:
+                    picture2=targetDetection(frame=frame1)
+                elif md == 1:
+                    picture2=None
                 else:
                     picture2=targetTrack(frame_lwpCV=frame1)                     
                 canvas1.create_image(0,0,anchor='nw',image=picture1)  #原视频
@@ -122,6 +181,7 @@ def startView():
                 win.update()
     except:
         pass
+    vc1.release()
     cv2.destroyAllWindows()
 
 #抓取视频的帧
@@ -165,10 +225,10 @@ pause_butt = Button(win,text='pause',bd=1,command=pauseView)
 pause_butt.place(x=window_width/2+30,y=10)
 bg_butt = Button(win,text='打开背景重建',bd=1,command=isGmm)
 bg_butt.place(x=window_width/2+120,y=10)
-target_butt = Button(win,text='关闭目标检测与跟踪',bd=1,command=None)
+target_butt = Button(win,text='打开目标检测',bd=1,command=isDetect)
 target_butt.place(x=window_width/2+250,y=10)
-modify_butt = Button(win,text='关闭遮挡纠错',bd=1,command=None)
-modify_butt.place(x=window_width/2+450,y=10)
+modify_butt = Button(win,text='打开遮挡纠错',bd=1,command=isModify)
+modify_butt.place(x=window_width/2+400,y=10)
 #显示文件地址
 path=tk.StringVar()
 dir_file = Entry(win,text=path,width=70)
