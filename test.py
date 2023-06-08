@@ -20,11 +20,32 @@ backSub = cv2.createBackgroundSubtractorMOG2()
 g=0
 bg=0
 md=0
+
+old_gray = None
+p0 = None
+mask = None
+
 # 设置背景减法器，这里使用opencv提供的MOG2算法
 bg_subtractor = cv2.createBackgroundSubtractorMOG2()
 
 # 构建结构元素，用于形态学运算
 kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (5,5))
+
+
+
+
+# ShiTomasi corner detection的参数
+feature_params = dict(maxCorners=200,
+                      qualityLevel=0.1,
+                      minDistance=12,
+                      blockSize=7)
+# 光流法参数
+lk_params = dict(winSize=(30, 30),
+                 maxLevel=4,
+                 criteria=(cv2.TERM_CRITERIA_EPS | cv2.TERM_CRITERIA_COUNT, 20, 0.01))
+# 创建随机生成的颜色用以绘制跟踪线
+color = np.random.randint(0, 255, (200, 3))
+
 
 #原视频地址
 path_ = ""
@@ -81,8 +102,31 @@ def GMM(frame):
     fgMask = backSub.apply(frame)
     rows,cols,_channels = map(int,frame.shape)
     fgMasksrc = cv2.pyrDown(fgMask,dstsize=(cols//2,rows//2))
-    return tkImage(fgMasksrc) 
+    return tkImage(fgMasksrc)
 
+#光流法追踪
+def opticalFlow(frame,old_frame):
+    global old_gray
+    global p0
+    global mask
+
+    frame_gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+    # 计算光流以获取点的新位置
+    p1, st, err = cv2.calcOpticalFlowPyrLK(old_gray, frame_gray, p0, None, **lk_params)
+    # 选择good points
+    good_new = p1[st == 1]
+    good_old = p0[st == 1]
+
+    for i, (new, old) in enumerate(zip(good_new, good_old)):
+        a, b = new.ravel()
+        c, d = old.ravel()
+        mask = cv2.line(mask, (int(a), int(b)), (int(c),int(d)), color[i].tolist(), 2)
+        frame = cv2.circle(frame, (int(a),int(b)), 5, color[i].tolist(), -1)
+    img = cv2.add(frame, mask)
+    #cv2.imshow('frame', img)
+    old_gray = frame_gray.copy()
+    p0 = good_new.reshape(-1, 1, 2)
+    return tkImage(img)
 
 #打开文件
 def openFile():
@@ -158,7 +202,17 @@ def isModify():
 
 #start,请看这里，请看这里,请看这里，请看这里,请看这里，请看这里,请看这里，请看这里,请看这里，请看这里
 def startView():
+    global old_gray
+    global p0
+    global mask
+
     vc1 = cv2.VideoCapture(path_)  #打开 path_ 路径的视频
+
+    old_frame = tkFrame(vc=vc1) # 取出视频的第一帧
+    old_gray = cv2.cvtColor(old_frame, cv2.COLOR_BGR2GRAY)  # 灰度化
+    p0 = cv2.goodFeaturesToTrack(old_gray, mask=None, **feature_params)
+    mask = np.zeros_like(old_frame)  # 为绘制创建掩码图片
+
     try:
         while True:
             if lock % 2 == 0:
@@ -174,7 +228,7 @@ def startView():
                 elif bg == 1:
                     picture2=targetDetection(frame=frame1)[1]
                 elif md == 1:
-                    picture2=None
+                    picture2=opticalFlow(frame=frame1, old_frame=old_frame)
                 else:
                     picture2=targetTrack(frame_lwpCV=frame1)                     
                 canvas1.create_image(0,0,anchor='nw',image=picture1)  #原视频
@@ -198,7 +252,7 @@ def tkFrame(vc):
 def tkImage(frame):
     cvimage = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
     pilImage = Image.fromarray(cvimage)
-    pilImage = pilImage.resize((image_width, image_height),Image.ANTIALIAS)
+    pilImage = pilImage.resize((image_width, image_height),Image.BILINEAR)
     tkImage =  ImageTk.PhotoImage(image=pilImage)
     return tkImage
 
@@ -221,6 +275,10 @@ lock=0  #暂停标志
 #绘制窗口以及设置窗口几何
 win = tk.Tk()
 win.geometry(str(window_width)+'x'+str(window_height))
+win.title("运动目标检测与跟踪")
+top = Menu(win)
+top.add_command(label="打开",command=openFile)
+win.config(menu=top)
 #设置功能按钮
 open_butt = Button(win,text="open",bd=1,command=openFile)
 open_butt.place(x=360,y=10)
