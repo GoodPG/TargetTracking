@@ -100,15 +100,15 @@ def isGmm():
         bg_butt.place(x=window_width/2+120,y=10)
 
 
-#start,请看这里，请看这里,请看这里，请看这里,请看这里，请看这里,请看这里，请看这里,请看这里，请看这里
+#start
 def startView():
     vc1 = cv2.VideoCapture(path_)  #打开 path_ 路径的视频
     try:
         while True:
             if lock % 2 == 0:
                 frame1 = tkFrame(vc=vc1)
-                picture1=tkImage(frame=frame1)  #原视频从视频中抓取帧并转换为图片，我用的ImageTk.PhotoImage 对象
-                #处理后结果，把处理后的帧传到这里即可,我现在是使用的原视频
+                picture1=tkImage(frame=frame1)  #原视频从视频中抓取帧并转换为图片
+                #处理后结果
                 if g == 1:
                     picture2=GMM(frame=frame1)
                 else:
