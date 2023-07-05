@@ -294,7 +294,7 @@ def destroyCanvas():
         return
 
 
-# start,请看这里，请看这里,请看这里，请看这里,请看这里，请看这里,请看这里，请看这里,请看这里，请看这里
+# start
 def startView():
     global old_gray
     global p0
@@ -313,12 +313,12 @@ def startView():
         while True:
             if lock % 2 == 0:
                 frame1 = tkFrame(vc=vc1)
-                # 原视频从视频中抓取帧并转换为图片，我用的ImageTk.PhotoImage 对象
+                # 原视频从视频中抓取帧并转换为图片
                 if bg == 1:
                     picture1 = targetDetection(frame=frame1)[0]
                 else:
                     picture1 = tkImage(frame=frame1)
-                    # 处理后结果，把处理后的帧传到这里即可,我现在是使用的原视频
+                    # 处理后结果
                 # 背景重建
                 if g == 1:
 
